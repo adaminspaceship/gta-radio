@@ -438,7 +438,7 @@ const TTSAudioSync = () => {
       <h1>Radio Generator</h1>
       
       <div className="input-section">
-        <label htmlFor="textInput">Give me a situtation, I'll make the joke:</label>
+        <label htmlFor="textInput">Give me a situation, I'll make the joke:</label>
         <textarea
           id="textInput"
           ref={textInputRef}
