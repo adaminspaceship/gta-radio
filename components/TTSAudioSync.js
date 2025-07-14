@@ -394,7 +394,7 @@ const TTSAudioSync = () => {
         try {
           await navigator.share({
             title: 'Radio Joke Audio',
-            text: 'Check out this radio joke I generated!',
+            text: 'Check out this radio joke I generated on https://gta-radio-nu.vercel.app/!',
             url: window.location.href
           });
           
