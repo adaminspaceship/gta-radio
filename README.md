@@ -16,38 +16,30 @@ A web application built with Next.js that generates downloadable 40-second mixed
 
 ## Architecture
 
-This application uses a **client-server architecture**:
+This application uses a **hybrid client-server architecture** optimized for serverless deployment:
 
-- **Client-Side (Next.js React)**: Handles UI, user interactions, and file downloads
-- **Server-Side (Next.js API Routes)**: Manages secure API calls to ElevenLabs and OpenAI, plus audio processing
-- **Audio Processing**: Server-side mixing using FFmpeg to combine TTS and background music
+- **Client-Side (Next.js React)**: Handles UI, user interactions, Web Audio API mixing, and file downloads
+- **Server-Side (Next.js API Routes)**: Manages secure API calls to ElevenLabs and OpenAI, returns audio data
+- **Audio Processing**: Client-side mixing using Web Audio API (no FFmpeg required)
 - **Static Assets**: Audio files served through Next.js public directory
+- **Serverless Compatible**: Uses `/tmp` directory for temporary files, no system dependencies required
 
 ## Requirements
 
 1. **Node.js 18+**: Required for Next.js development and deployment
-2. **FFmpeg**: Required for server-side audio processing and mixing
-3. **ElevenLabs API Key**: You'll need an account and API key from [ElevenLabs](https://elevenlabs.io/)
-4. **OpenAI API Key**: You'll need an account and API key from [OpenAI](https://platform.openai.com/) for the radio joke feature
-5. **Audio File**: A `song.mp3` file placed in the `public/` directory
+2. **ElevenLabs API Key**: You'll need an account and API key from [ElevenLabs](https://elevenlabs.io/)
+3. **OpenAI API Key**: You'll need an account and API key from [OpenAI](https://platform.openai.com/) for the radio joke feature
+4. **Audio File**: A `song.mp3` file placed in the `public/` directory
+5. **Modern Web Browser**: Supports Web Audio API (all modern browsers)
 
-### Installing FFmpeg
+### Why No FFmpeg?
 
-**macOS** (using Homebrew):
-```bash
-brew install ffmpeg
-```
+This application uses **client-side audio mixing** with the Web Audio API instead of server-side FFmpeg processing. This approach offers several advantages:
 
-**Ubuntu/Debian**:
-```bash
-sudo apt update
-sudo apt install ffmpeg
-```
-
-**Windows**:
-1. Download from [FFmpeg Official Site](https://ffmpeg.org/download.html)
-2. Add to system PATH
-3. Or use chocolatey: `choco install ffmpeg`
+- ✅ **Serverless-friendly**: No system dependencies required
+- ✅ **Better performance**: No heavy server-side processing
+- ✅ **Scalable**: Offloads processing to the client
+- ✅ **Universal compatibility**: Works on any hosting platform
 
 ## Local Development Setup
 

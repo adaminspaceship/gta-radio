@@ -10,6 +10,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "music-metadata": "^7.14.0",
     "next": "14.0.3",
     "node-fetch": "^3.3.2",
     "openai": "^4.104.0",

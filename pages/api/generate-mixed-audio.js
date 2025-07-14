@@ -1,8 +1,7 @@
 import fetch from 'node-fetch';
 import fs from 'fs';
 import path from 'path';
-import { spawn } from 'child_process';
-import { promisify } from 'util';
+import { parseBuffer } from 'music-metadata';
 import OpenAI from 'openai';
 
 const customVoiceId = 'FZNbEQJ9Bfg4l9TcIplH';
@@ -37,50 +36,16 @@ const generateRadioJoke = async (text) => {
   return response.choices[0].message.content;
 };
 
-// Helper function to run FFmpeg commands
-const runFFmpeg = (args) => {
-  return new Promise((resolve, reject) => {
-    const ffmpeg = spawn('ffmpeg', args);
-    
-    let stderr = '';
-    ffmpeg.stderr.on('data', (data) => {
-      stderr += data.toString();
-    });
-    
-    ffmpeg.on('close', (code) => {
-      if (code === 0) {
-        resolve();
-      } else {
-        reject(new Error(`FFmpeg exited with code ${code}: ${stderr}`));
-      }
-    });
-  });
-};
-
-// Helper function to get audio duration
+// Helper function to get audio duration using music-metadata
 const getAudioDuration = async (filePath) => {
-  return new Promise((resolve, reject) => {
-    const ffprobe = spawn('ffprobe', [
-      '-v', 'quiet',
-      '-show_entries', 'format=duration',
-      '-of', 'csv=p=0',
-      filePath
-    ]);
-    
-    let stdout = '';
-    ffprobe.stdout.on('data', (data) => {
-      stdout += data.toString();
-    });
-    
-    ffprobe.on('close', (code) => {
-      if (code === 0) {
-        const duration = parseFloat(stdout.trim());
-        resolve(duration);
-      } else {
-        reject(new Error(`FFprobe exited with code ${code}`));
-      }
-    });
-  });
+  try {
+    const buffer = fs.readFileSync(filePath);
+    const metadata = await parseBuffer(buffer);
+    return metadata.format.duration || 0;
+  } catch (error) {
+    console.error('Error getting audio duration:', error);
+    throw new Error('Failed to get audio duration');
+  }
 };
 
 export default async function handler(req, res) {
@@ -103,7 +68,6 @@ export default async function handler(req, res) {
   const tempDir = '/tmp';
   const ttsFile = path.join(tempDir, `tts-${Date.now()}.mp3`);
   const musicFile = path.join(process.cwd(), 'public', 'song.mp3');
-  const outputFile = path.join(tempDir, `mixed-${Date.now()}.wav`);
 
   try {
     // Note: /tmp directory always exists in serverless environments
@@ -150,53 +114,36 @@ export default async function handler(req, res) {
     const startDelay = Math.max(0, targetEndTime - ttsDuration);
     console.log(`TTS will start at: ${startDelay} seconds`);
 
-    // Step 5: Mix audio with FFmpeg
-    console.log('Mixing audio...');
+    // Step 5: Read TTS audio and prepare data for client-side mixing
+    console.log('Preparing audio data for client-side mixing...');
+    const ttsFileBuffer = fs.readFileSync(ttsFile);
+    const musicBuffer = fs.readFileSync(musicFile);
     
-    // Create filter that handles both short and long TTS
-    let filterComplex;
-    if (startDelay > 0) {
-      // TTS is short enough, delay it to end at 22.5 seconds
-      filterComplex = `[0:a]volume=0.3,atrim=0:40[music];[1:a]adelay=${startDelay * 1000}|${startDelay * 1000}[tts_delayed];[music][tts_delayed]amix=inputs=2:duration=first[mixed]`;
-    } else {
-      // TTS is too long, trim it to fit exactly 22.5 seconds
-      const ttsEndTime = 22.5;
-      filterComplex = `[0:a]volume=0.3,atrim=0:40[music];[1:a]atrim=0:${ttsEndTime}[tts_trimmed];[music][tts_trimmed]amix=inputs=2:duration=first[mixed]`;
-    }
+    // Get music duration for reference
+    const musicDuration = await getAudioDuration(musicFile);
     
-    // Create 40-second output with background music and TTS
-    const ffmpegArgs = [
-      '-y', // Overwrite output file
-      '-i', musicFile, // Input background music
-      '-i', ttsFile, // Input TTS
-      '-filter_complex', filterComplex,
-      '-map', '[mixed]',
-      '-t', '40', // Output duration 40 seconds
-      '-c:a', 'pcm_s16le', // WAV format
-      '-ar', '44100', // Sample rate
-      outputFile
-    ];
-
-    await runFFmpeg(ffmpegArgs);
-
-    // Step 6: Read the mixed audio file and send as response
-    console.log('Sending mixed audio file...');
-    const audioBuffer = fs.readFileSync(outputFile);
-    
-    // Clean up temporary files
+    // Clean up temporary TTS file
     if (fs.existsSync(ttsFile)) {
       fs.unlinkSync(ttsFile);
     }
-    if (fs.existsSync(outputFile)) {
-      fs.unlinkSync(outputFile);
-    }
 
-    // Set response headers for file download
-    res.setHeader('Content-Type', 'audio/wav');
-    res.setHeader('Content-Length', audioBuffer.length);
-    res.setHeader('Content-Disposition', 'attachment; filename="radio-joke.wav"');
-    
-    return res.send(audioBuffer);
+    // Return JSON response with audio data and mixing parameters
+    const response = {
+      ttsAudio: ttsFileBuffer.toString('base64'),
+      musicAudio: musicBuffer.toString('base64'),
+      ttsDuration: ttsDuration,
+      musicDuration: musicDuration,
+      startDelay: startDelay,
+      targetEndTime: targetEndTime,
+      mixingParams: {
+        musicVolume: 0.3,
+        ttsVolume: 1.0,
+        totalDuration: 40
+      }
+    };
+
+    res.setHeader('Content-Type', 'application/json');
+    return res.json(response);
 
   } catch (error) {
     console.error('Error in audio mixing:', error);
@@ -204,9 +151,6 @@ export default async function handler(req, res) {
     // Clean up temporary files on error
     if (fs.existsSync(ttsFile)) {
       fs.unlinkSync(ttsFile);
-    }
-    if (fs.existsSync(outputFile)) {
-      fs.unlinkSync(outputFile);
     }
     
     return res.status(500).json({ 

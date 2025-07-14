@@ -90,6 +90,98 @@ const useAudioGeneration = () => {
   const [downloadUrl, setDownloadUrl] = useState(null);
   const [fileName, setFileName] = useState('');
 
+  // Client-side audio mixing using Web Audio API
+  const mixAudioFiles = useCallback(async (audioData) => {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    
+    // Decode audio data
+    const ttsArrayBuffer = Uint8Array.from(atob(audioData.ttsAudio), c => c.charCodeAt(0)).buffer;
+    const musicArrayBuffer = Uint8Array.from(atob(audioData.musicAudio), c => c.charCodeAt(0)).buffer;
+    
+    const ttsBuffer = await audioContext.decodeAudioData(ttsArrayBuffer);
+    const musicBuffer = await audioContext.decodeAudioData(musicArrayBuffer);
+    
+    // Use the AudioContext's sample rate (usually 44100 or 48000)
+    const sampleRate = audioContext.sampleRate;
+    const outputBuffer = audioContext.createBuffer(2, 40 * sampleRate, sampleRate);
+    
+    console.log('Audio Context Sample Rate:', sampleRate);
+    console.log('TTS Buffer Sample Rate:', ttsBuffer.sampleRate);
+    console.log('Music Buffer Sample Rate:', musicBuffer.sampleRate);
+    
+    // Mix the audio with proper sample rate handling
+    const startDelay = audioData.startDelay;
+    const targetEndTime = audioData.targetEndTime;
+    
+    // Helper function to resample audio if needed
+    const resampleAudio = (sourceBuffer, targetSampleRate) => {
+      if (sourceBuffer.sampleRate === targetSampleRate) {
+        return sourceBuffer;
+      }
+      
+      const ratio = targetSampleRate / sourceBuffer.sampleRate;
+      const newLength = Math.floor(sourceBuffer.length * ratio);
+      const resampled = audioContext.createBuffer(
+        sourceBuffer.numberOfChannels,
+        newLength,
+        targetSampleRate
+      );
+      
+      for (let channel = 0; channel < sourceBuffer.numberOfChannels; channel++) {
+        const sourceData = sourceBuffer.getChannelData(channel);
+        const targetData = resampled.getChannelData(channel);
+        
+        for (let i = 0; i < newLength; i++) {
+          const sourceIndex = i / ratio;
+          const index = Math.floor(sourceIndex);
+          const fraction = sourceIndex - index;
+          
+          if (index < sourceData.length - 1) {
+            targetData[i] = sourceData[index] * (1 - fraction) + sourceData[index + 1] * fraction;
+          } else if (index < sourceData.length) {
+            targetData[i] = sourceData[index];
+          }
+        }
+      }
+      
+      return resampled;
+    };
+    
+    // Resample buffers to match output sample rate
+    const resampledTTS = resampleAudio(ttsBuffer, sampleRate);
+    const resampledMusic = resampleAudio(musicBuffer, sampleRate);
+    
+    // Add background music (reduced volume)
+    for (let channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
+      const outputData = outputBuffer.getChannelData(channel);
+      const musicData = resampledMusic.getChannelData(Math.min(channel, resampledMusic.numberOfChannels - 1));
+      
+      for (let i = 0; i < outputData.length && i < musicData.length; i++) {
+        outputData[i] = musicData[i] * audioData.mixingParams.musicVolume;
+      }
+    }
+    
+    // Add TTS audio (with delay)
+    const ttsStartSample = Math.floor(startDelay * sampleRate);
+    const ttsEndSample = Math.floor(targetEndTime * sampleRate);
+    
+    for (let channel = 0; channel < outputBuffer.numberOfChannels; channel++) {
+      const outputData = outputBuffer.getChannelData(channel);
+      const ttsData = resampledTTS.getChannelData(Math.min(channel, resampledTTS.numberOfChannels - 1));
+      
+      for (let i = 0; i < ttsData.length; i++) {
+        const outputIndex = ttsStartSample + i;
+        if (outputIndex < outputData.length && outputIndex < ttsEndSample) {
+          outputData[outputIndex] += ttsData[i] * audioData.mixingParams.ttsVolume;
+        }
+      }
+    }
+    
+    // Convert to WAV format
+    const wavData = audioBufferToWav(outputBuffer);
+    return new Blob([wavData], { type: 'audio/wav' });
+  }, []);
+
   const generateAudio = useCallback(async (text) => {
     if (!text.trim()) {
       throw new Error('Please enter some text');
@@ -112,9 +204,14 @@ const useAudioGeneration = () => {
         throw new Error(errorData.error || `HTTP error! status: ${response.status}`);
       }
 
-      // Create blob from response
-      const audioBlob = await response.blob();
-      const url = URL.createObjectURL(audioBlob);
+      // Get audio data and mixing parameters
+      const audioData = await response.json();
+      
+      // Mix audio client-side
+      const mixedBlob = await mixAudioFiles(audioData);
+      
+      // Create download URL
+      const url = URL.createObjectURL(mixedBlob);
       const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
       const filename = `radio-joke-${timestamp}.wav`;
       
@@ -125,7 +222,7 @@ const useAudioGeneration = () => {
     } finally {
       setIsGenerating(false);
     }
-  }, []);
+  }, [mixAudioFiles]);
 
   const clearDownload = useCallback(() => {
     if (downloadUrl) {
@@ -137,6 +234,63 @@ const useAudioGeneration = () => {
 
   return { isGenerating, generateAudio, downloadUrl, fileName, clearDownload };
 };
+
+// Helper function to convert AudioBuffer to WAV format
+function audioBufferToWav(buffer) {
+  const numChannels = buffer.numberOfChannels;
+  const sampleRate = buffer.sampleRate;
+  const format = 1; // PCM
+  const bitDepth = 16;
+  
+  const bytesPerSample = bitDepth / 8;
+  const blockAlign = numChannels * bytesPerSample;
+  const byteRate = sampleRate * blockAlign;
+  const dataSize = buffer.length * blockAlign;
+  const bufferSize = 44 + dataSize;
+  
+  const arrayBuffer = new ArrayBuffer(bufferSize);
+  const view = new DataView(arrayBuffer);
+  
+  // WAV header
+  const writeString = (offset, string) => {
+    for (let i = 0; i < string.length; i++) {
+      view.setUint8(offset + i, string.charCodeAt(i));
+    }
+  };
+  
+  writeString(0, 'RIFF');
+  view.setUint32(4, bufferSize - 8, true);
+  writeString(8, 'WAVE');
+  writeString(12, 'fmt ');
+  view.setUint32(16, 16, true);
+  view.setUint16(20, format, true);
+  view.setUint16(22, numChannels, true);
+  view.setUint32(24, sampleRate, true);
+  view.setUint32(28, byteRate, true);
+  view.setUint16(32, blockAlign, true);
+  view.setUint16(34, bitDepth, true);
+  writeString(36, 'data');
+  view.setUint32(40, dataSize, true);
+  
+  // Convert float samples to 16-bit PCM
+  let offset = 44;
+  for (let i = 0; i < buffer.length; i++) {
+    for (let channel = 0; channel < numChannels; channel++) {
+      const sample = Math.max(-1, Math.min(1, buffer.getChannelData(channel)[i]));
+      view.setInt16(offset, sample < 0 ? sample * 0x8000 : sample * 0x7FFF, true);
+      offset += 2;
+    }
+  }
+  
+  console.log('WAV created:', {
+    sampleRate: sampleRate,
+    channels: numChannels,
+    duration: buffer.length / sampleRate,
+    bufferSize: bufferSize
+  });
+  
+  return arrayBuffer;
+}
 
 // Main Audio Generator Component
 const TTSAudioSync = () => {
