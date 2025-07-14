@@ -366,7 +366,7 @@ const TTSAudioSync = () => {
     
     try {
       // Check if Web Share API is supported
-      if (navigator.share && navigator.canShare) {
+      if (navigator.share) {
         // Convert blob URL to actual blob for sharing
         const response = await fetch(downloadUrl);
         const blob = await response.blob();
@@ -374,41 +374,56 @@ const TTSAudioSync = () => {
         // Create File object for sharing
         const file = new File([blob], fileName, { type: 'audio/wav' });
         
-        // Check if we can share files
-        if (navigator.canShare({ files: [file] })) {
+        // Try to share with file first
+        try {
+          if (navigator.canShare && navigator.canShare({ files: [file] })) {
+            await navigator.share({
+              title: 'Radio Joke Audio',
+              text: 'Check out this radio joke I generated!',
+              files: [file]
+            });
+            
+            setStatus({ message: 'Shared successfully!', type: 'success' });
+            return;
+          }
+        } catch (fileShareError) {
+          console.log('File sharing not supported, trying text share:', fileShareError);
+        }
+        
+        // If file sharing fails, try sharing just text with a link
+        try {
           await navigator.share({
             title: 'Radio Joke Audio',
             text: 'Check out this radio joke I generated!',
-            files: [file]
+            url: window.location.href
           });
           
-          setStatus({ message: 'Shared successfully!', type: 'success' });
+          setStatus({ message: 'Shared successfully! (File sharing not supported on this device)', type: 'success' });
           return;
+        } catch (textShareError) {
+          console.log('Text sharing also failed:', textShareError);
+          
+          // Check if user cancelled
+          if (textShareError.name === 'AbortError') {
+            setStatus({ message: 'Share cancelled', type: 'ready' });
+            return;
+          }
         }
       }
       
-      // Fallback to download if Web Share API is not supported or fails
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      setStatus({ message: 'Download started!', type: 'success' });
+      // If Web Share API is not supported, show an error
+      setStatus({ message: 'Sharing not supported on this device', type: 'error' });
       
     } catch (error) {
       console.error('Share failed:', error);
       
-      // Fallback to download on error
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      // Check if user cancelled (AbortError)
+      if (error.name === 'AbortError') {
+        setStatus({ message: 'Share cancelled', type: 'ready' });
+        return;
+      }
       
-      setStatus({ message: 'Download started!', type: 'success' });
+      setStatus({ message: 'Share failed', type: 'error' });
     }
   };
 
@@ -447,12 +462,14 @@ const TTSAudioSync = () => {
             <p>40-second mixed audio file with synchronized TTS and background music</p>
           </div>
           
-          <button 
-            className="share-button"
-            onClick={handleShare}
-          >
-            📤 Share {fileName}
-          </button>
+          <div className="action-buttons">
+            <button 
+              className="share-button"
+              onClick={handleShare}
+            >
+              📤 Share
+            </button>
+          </div>
         </div>
       )}
       

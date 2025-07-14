@@ -200,6 +200,35 @@ button:disabled {
     box-shadow: 0 6px 20px rgba(0, 122, 255, 0.4);
 }
 
+.action-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.action-buttons button {
+    flex: 1;
+    min-width: 120px;
+    max-width: 200px;
+}
+
+.download-button {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 15px 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    transition: all 0.3s ease;
+}
+
+.download-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
+}
+
 .status {
     text-align: center;
     padding: 15px;
@@ -253,5 +282,13 @@ button:disabled {
     
     .download-info h3 {
         font-size: 1.2em;
+    }
+    
+    .action-buttons {
+        flex-direction: column;
+    }
+    
+    .action-buttons button {
+        max-width: none;
     }
 } 

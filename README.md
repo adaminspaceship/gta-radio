@@ -46,8 +46,9 @@ This application uses **client-side audio mixing** with the Web Audio API instea
 ### User Workflow
 1. **Enter text** in the textbox (with engaging typing effect showing examples)
 2. **Click "Generate 40s Audio"** to create the mixed audio file
-3. **Click "Share"** to open the native iOS share sheet
-4. **Choose your sharing method**: Messages, Mail, AirDrop, Save to Files, etc.
+3. **Choose your action**:
+   - **Share** - Opens native iOS share sheet (Messages, Mail, AirDrop, etc.)
+   - **Download** - Traditional download to device storage
 
 ### Behind the Scenes
 - AI transforms your text into a hilarious radio joke
