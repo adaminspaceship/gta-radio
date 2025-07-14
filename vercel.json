@@ -1,0 +1,16 @@
+{
+  "build": {
+    "env": {
+      "NODE_ENV": "production"
+    }
+  },
+  "env": {
+    "ELEVENLABS_API_KEY": "@elevenlabs_api_key",
+    "GROK_API_KEY": "@grok_api_key"
+  },
+  "functions": {
+    "pages/api/**/*.js": {
+      "maxDuration": 30
+    }
+  }
+} 

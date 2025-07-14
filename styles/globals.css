@@ -124,11 +124,19 @@ button:disabled {
     box-shadow: none;
 }
 
+.button-group {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+}
+
+.button-group button {
+    flex: 1;
+}
+
 .secondary-button {
     background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
     color: #2d3436;
-    margin-top: 10px;
-    width: 100%;
     font-size: 14px;
     padding: 12px 20px;
     box-shadow: 0 4px 15px rgba(253, 203, 110, 0.3);
@@ -143,72 +151,51 @@ button:disabled {
     transform: scale(0.98);
 }
 
-#generateTTS {
-    width: 100%;
-    margin-top: 10px;
-}
-
-.playback-section {
-    margin-top: 30px;
-}
-
-.audio-info {
-    background: #f8f9fa;
-    border-radius: 12px;
-    padding: 20px;
-    margin-bottom: 20px;
-}
-
-.audio-info p {
-    margin-bottom: 10px;
-    color: #666;
-}
-
-.audio-info span {
+.primary-button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    font-size: 16px;
     font-weight: 600;
-    color: #333;
 }
 
-.controls {
-    display: flex;
-    gap: 15px;
-    margin-bottom: 20px;
-}
-
-.controls button {
-    flex: 1;
-}
-
-#stopButton {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-}
-
-#stopButton:hover:not(:disabled) {
-    box-shadow: 0 6px 20px rgba(245, 87, 108, 0.4);
-}
-
-.progress-bar {
-    position: relative;
-    background: #e1e5e9;
-    border-radius: 10px;
-    height: 8px;
-    margin-bottom: 20px;
-    overflow: hidden;
-}
-
-#progressFill {
-    height: 100%;
-    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-    border-radius: 10px;
-    width: 0%;
-    transition: width 0.1s ease;
-}
-
-#progressTime {
+.download-section {
+    margin: 30px 0;
+    padding: 25px;
+    background: #f8f9fa;
+    border-radius: 15px;
+    border: 2px solid #e9ecef;
     text-align: center;
+}
+
+.download-info {
+    margin-bottom: 20px;
+}
+
+.download-info h3 {
+    color: #28a745;
+    margin-bottom: 10px;
+    font-size: 1.4em;
+}
+
+.download-info p {
     color: #666;
     font-size: 14px;
-    margin-top: 10px;
+}
+
+.download-button {
+    background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+    color: white;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 15px 30px;
+    border-radius: 12px;
+    box-shadow: 0 4px 15px rgba(40, 167, 69, 0.3);
+    transition: all 0.3s ease;
+}
+
+.download-button:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(40, 167, 69, 0.4);
 }
 
 .status {
@@ -253,7 +240,16 @@ button:disabled {
         font-size: 2em;
     }
     
-    .controls {
+    .button-group {
         flex-direction: column;
+    }
+    
+    .download-section {
+        margin: 20px 0;
+        padding: 20px;
+    }
+    
+    .download-info h3 {
+        font-size: 1.2em;
     }
 } 
