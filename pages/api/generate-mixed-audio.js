@@ -99,17 +99,15 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'ElevenLabs API key not configured' });
   }
 
-  const tempDir = path.join(process.cwd(), 'temp');
+  // Use /tmp directory for serverless environments (Vercel, AWS Lambda, etc.)
+  const tempDir = '/tmp';
   const ttsFile = path.join(tempDir, `tts-${Date.now()}.mp3`);
   const musicFile = path.join(process.cwd(), 'public', 'song.mp3');
   const outputFile = path.join(tempDir, `mixed-${Date.now()}.wav`);
 
   try {
-    // Ensure temp directory exists
-    if (!fs.existsSync(tempDir)) {
-      fs.mkdirSync(tempDir, { recursive: true });
-    }
-
+    // Note: /tmp directory always exists in serverless environments
+    
     // Step 1: Generate radio joke
     console.log('Generating radio joke...');
     const jokeText = await generateRadioJoke(text);
