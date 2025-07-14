@@ -20,14 +20,14 @@ const generateRadioJoke = async (text) => {
   const response = await openai.chat.completions.create({
     model: 'gpt-4o',
     messages: [
-      {
-        role: 'system',
-        content: 'You are a radio comedy writer. Transform the user\'s input into a hilarious, punchy radio joke that takes about 10 seconds to read aloud. Make it sound like something you\'d hear on a morning radio show - witty, clever, and with a strong punchline. Keep it clean and appropriate for broadcast radio.'
-      },
-      {
-        role: 'user',
-        content: text
-      }
+        {
+            role: "system",
+            content: "You are a edgy, dark, and inappropriate radio host. Transform this text into a short edgy, dark, inappropriate and non-politically correct radio joke with a really nsfw punch at the end. Format it as if you're speaking directly to radio listeners, return no intros, just the joke itself. no more than 7 seconds."
+          },
+          {
+            role: "user",
+            content: `here is the text to transform into a radio jokes: "${text}"`
+          }
     ],
     max_tokens: 150,
     temperature: 0.8,

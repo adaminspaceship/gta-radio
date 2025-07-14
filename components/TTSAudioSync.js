@@ -353,16 +353,54 @@ const TTSAudioSync = () => {
       
       const result = await generateAudio(inputText);
       
-      setStatus({ message: 'Audio generated successfully! Click download to save.', type: 'success' });
+              setStatus({ message: 'Audio generated successfully! Click share to send.', type: 'success' });
     } catch (error) {
       console.error('Error generating audio:', error);
       setStatus({ message: `Error generating audio: ${error.message}`, type: 'error' });
     }
   };
 
-  // Download handler
-  const handleDownload = () => {
-    if (downloadUrl && fileName) {
+  // Share handler with iOS native sharing
+  const handleShare = async () => {
+    if (!downloadUrl || !fileName) return;
+    
+    try {
+      // Check if Web Share API is supported
+      if (navigator.share && navigator.canShare) {
+        // Convert blob URL to actual blob for sharing
+        const response = await fetch(downloadUrl);
+        const blob = await response.blob();
+        
+        // Create File object for sharing
+        const file = new File([blob], fileName, { type: 'audio/wav' });
+        
+        // Check if we can share files
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: 'Radio Joke Audio',
+            text: 'Check out this radio joke I generated!',
+            files: [file]
+          });
+          
+          setStatus({ message: 'Shared successfully!', type: 'success' });
+          return;
+        }
+      }
+      
+      // Fallback to download if Web Share API is not supported or fails
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      setStatus({ message: 'Download started!', type: 'success' });
+      
+    } catch (error) {
+      console.error('Share failed:', error);
+      
+      // Fallback to download on error
       const link = document.createElement('a');
       link.href = downloadUrl;
       link.download = fileName;
@@ -410,10 +448,10 @@ const TTSAudioSync = () => {
           </div>
           
           <button 
-            className="download-button"
-            onClick={handleDownload}
+            className="share-button"
+            onClick={handleShare}
           >
-            📥 Download {fileName}
+            📤 Share {fileName}
           </button>
         </div>
       )}

@@ -9,7 +9,7 @@ A web application built with Next.js that generates downloadable 40-second mixed
 - **Perfect Synchronization**: Automatically calculates timing to ensure TTS ends at exactly 22.5 seconds
 - **AI-Powered Radio Jokes**: Uses OpenAI's ChatGPT-4o to transform any text into hilarious radio jokes with punchy endings
 - **Custom Voice**: Always uses your pre-configured custom ElevenLabs voice for consistent audio quality
-- **40-Second Downloads**: Generates professional-quality WAV files ready for use
+- **Native iOS Sharing**: One-tap sharing to Messages, Mail, AirDrop, and more with native iOS share sheet
 - **Typing Animation**: Engaging typing effect with example prompts
 - **Modern UI**: Clean, responsive design with smooth animations
 - **Production Ready**: Optimized for deployment with proper security
@@ -18,7 +18,7 @@ A web application built with Next.js that generates downloadable 40-second mixed
 
 This application uses a **hybrid client-server architecture** optimized for serverless deployment:
 
-- **Client-Side (Next.js React)**: Handles UI, user interactions, Web Audio API mixing, and file downloads
+- **Client-Side (Next.js React)**: Handles UI, user interactions, Web Audio API mixing, and native sharing
 - **Server-Side (Next.js API Routes)**: Manages secure API calls to ElevenLabs and OpenAI, returns audio data
 - **Audio Processing**: Client-side mixing using Web Audio API (no FFmpeg required)
 - **Static Assets**: Audio files served through Next.js public directory
@@ -40,6 +40,21 @@ This application uses **client-side audio mixing** with the Web Audio API instea
 - ✅ **Better performance**: No heavy server-side processing
 - ✅ **Scalable**: Offloads processing to the client
 - ✅ **Universal compatibility**: Works on any hosting platform
+
+## How It Works
+
+### User Workflow
+1. **Enter text** in the textbox (with engaging typing effect showing examples)
+2. **Click "Generate 40s Audio"** to create the mixed audio file
+3. **Click "Share"** to open the native iOS share sheet
+4. **Choose your sharing method**: Messages, Mail, AirDrop, Save to Files, etc.
+
+### Behind the Scenes
+- AI transforms your text into a hilarious radio joke
+- ElevenLabs generates high-quality TTS audio
+- Web Audio API mixes TTS with background music
+- Perfect timing ensures TTS ends at exactly 22.5 seconds
+- 40-second professional WAV file ready for sharing
 
 ## Local Development Setup
 
