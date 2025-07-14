@@ -1,19 +1,20 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 // Custom hook for typing effect
-const useTypingEffect = (textInputRef, isInputFocused, hasInputValue) => {
+const useTypingEffect = (textInputRef, hasInputValue) => {
   const [isTyping, setIsTyping] = useState(false);
   const typingTimeoutRef = useRef(null);
   const currentStringIndexRef = useRef(0);
   const currentCharIndexRef = useRef(0);
   
   const typingStrings = [
+    "Our group is full of people who don't know shit about startups",
     "Noa and Jake split up because noa was too horny",
     "Ron caught his parents having sex in the bathroom",
   ];
 
   const typeNextChar = useCallback(() => {
-    if (!isTyping || hasInputValue || isInputFocused) return;
+    if (!isTyping || hasInputValue) return;
     
     const currentString = typingStrings[currentStringIndexRef.current];
     
@@ -29,10 +30,10 @@ const useTypingEffect = (textInputRef, isInputFocused, hasInputValue) => {
       // Pause then start backspacing
       typingTimeoutRef.current = setTimeout(backspaceChar, 2000);
     }
-  }, [isTyping, hasInputValue, isInputFocused, typingStrings]);
+  }, [isTyping, hasInputValue, typingStrings]);
 
   const backspaceChar = useCallback(() => {
-    if (!isTyping || hasInputValue || isInputFocused) return;
+    if (!isTyping || hasInputValue) return;
     
     const currentString = typingStrings[currentStringIndexRef.current];
     
@@ -49,13 +50,13 @@ const useTypingEffect = (textInputRef, isInputFocused, hasInputValue) => {
       currentStringIndexRef.current = (currentStringIndexRef.current + 1) % typingStrings.length;
       typingTimeoutRef.current = setTimeout(typeNextChar, 100);
     }
-  }, [isTyping, hasInputValue, isInputFocused, typingStrings, typeNextChar]);
+  }, [isTyping, hasInputValue, typingStrings, typeNextChar]);
 
   const startTyping = useCallback(() => {
-    if (!hasInputValue && !isInputFocused) {
+    if (!hasInputValue) {
       setIsTyping(true);
     }
-  }, [hasInputValue, isInputFocused]);
+  }, [hasInputValue]);
 
   const stopTyping = useCallback(() => {
     setIsTyping(false);
@@ -303,7 +304,6 @@ const TTSAudioSync = () => {
   // Custom hooks
   const { startTyping, stopTyping } = useTypingEffect(
     textInputRef, 
-    isInputFocused, 
     inputText.trim() !== ''
   );
   
@@ -326,7 +326,10 @@ const TTSAudioSync = () => {
   // Handle input focus/blur for typing effect
   const handleInputFocus = () => {
     setIsInputFocused(true);
-    stopTyping();
+    // Ensure typing continues if no text is present
+    if (inputText.trim() === '') {
+      startTyping();
+    }
   };
 
   const handleInputBlur = () => {
@@ -342,6 +345,9 @@ const TTSAudioSync = () => {
     setInputText(e.target.value);
     if (e.target.value.trim() !== '') {
       stopTyping();
+    } else {
+      // If text is cleared, restart typing immediately
+      startTyping();
     }
   };
 
@@ -429,10 +435,10 @@ const TTSAudioSync = () => {
 
   return (
     <div className="container">
-      <h1>Radio Joke Generator</h1>
+      <h1>Radio Generator</h1>
       
       <div className="input-section">
-        <label htmlFor="textInput">Write some text:</label>
+        <label htmlFor="textInput">Give me a situtation, I'll make the joke:</label>
         <textarea
           id="textInput"
           ref={textInputRef}
@@ -450,7 +456,7 @@ const TTSAudioSync = () => {
             onClick={handleGenerateAudio}
             disabled={isGeneratingAudio || !inputText.trim()}
           >
-            {isGeneratingAudio ? '🎵 Generating Audio...' : '🎵 Generate 40s Audio'}
+            {isGeneratingAudio ? '🎵 Generating Audio...' : '🎵 Generate Audio'}
           </button>
         </div>
       </div>
@@ -459,7 +465,6 @@ const TTSAudioSync = () => {
         <div className="download-section">
           <div className="download-info">
             <h3>✅ Your audio is ready!</h3>
-            <p>40-second mixed audio file with synchronized TTS and background music</p>
           </div>
           
           <div className="action-buttons">
