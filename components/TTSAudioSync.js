@@ -82,40 +82,7 @@ const useTypingEffect = (textInputRef, isInputFocused, hasInputValue) => {
   return { startTyping, stopTyping };
 };
 
-// Custom hook for joke generation
-const useJokeGeneration = () => {
-  const [isGenerating, setIsGenerating] = useState(false);
 
-  const generateJoke = useCallback(async (text) => {
-    if (!text.trim()) {
-      throw new Error('Please enter some text to transform into a joke');
-    }
-
-    setIsGenerating(true);
-    
-    try {
-      const response = await fetch('/api/joke', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ text })
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.error || `HTTP error! status: ${response.status}`);
-      }
-
-      return data.joke;
-    } finally {
-      setIsGenerating(false);
-    }
-  }, []);
-
-  return { isGenerating, generateJoke };
-};
 
 // Custom hook for audio generation and download
 const useAudioGeneration = () => {
@@ -186,11 +153,6 @@ const TTSAudioSync = () => {
     inputText.trim() !== ''
   );
   
-  const { 
-    isGenerating: isGeneratingJoke, 
-    generateJoke 
-  } = useJokeGeneration();
-  
   const {
     isGenerating: isGeneratingAudio,
     generateAudio,
@@ -229,29 +191,10 @@ const TTSAudioSync = () => {
     }
   };
 
-  // Joke generation handler
-  const handleGenerateJoke = async () => {
-    try {
-      setStatus({ message: 'Generating radio joke...', type: 'loading' });
-      
-      const joke = await generateJoke(inputText);
-      setInputText(joke);
-      
-      if (textInputRef.current) {
-        textInputRef.current.focus();
-      }
-      
-      setStatus({ message: 'Radio joke generated successfully!', type: 'success' });
-    } catch (error) {
-      console.error('Error generating radio joke:', error);
-      setStatus({ message: `Error generating radio joke: ${error.message}`, type: 'error' });
-    }
-  };
-
   // Audio generation handler
   const handleGenerateAudio = async () => {
     try {
-      setStatus({ message: 'Generating 40-second mixed audio file...', type: 'loading' });
+      setStatus({ message: 'Generating radio joke and mixing 40-second audio file...', type: 'loading' });
       clearDownload(); // Clear any previous download
       
       const result = await generateAudio(inputText);
@@ -277,14 +220,12 @@ const TTSAudioSync = () => {
     }
   };
 
-  const isAnyGenerating = isGeneratingJoke || isGeneratingAudio;
-
   return (
     <div className="container">
       <h1>Radio Joke Generator</h1>
       
       <div className="input-section">
-        <label htmlFor="textInput">Write a funny joke:</label>
+        <label htmlFor="textInput">Write some text:</label>
         <textarea
           id="textInput"
           ref={textInputRef}
@@ -293,22 +234,14 @@ const TTSAudioSync = () => {
           onFocus={handleInputFocus}
           onBlur={handleInputBlur}
           placeholder="Enter your text here..."
-          disabled={isAnyGenerating}
+          disabled={isGeneratingAudio}
         />
         
         <div className="button-group">
           <button 
-            className="secondary-button"
-            onClick={handleGenerateJoke}
-            disabled={isAnyGenerating || !inputText.trim()}
-          >
-            {isGeneratingJoke ? '🎙️ Generating...' : '🎙️ Make Radio Joke'}
-          </button>
-          
-          <button 
             className="primary-button"
             onClick={handleGenerateAudio}
-            disabled={isAnyGenerating || !inputText.trim()}
+            disabled={isGeneratingAudio || !inputText.trim()}
           >
             {isGeneratingAudio ? '🎵 Generating Audio...' : '🎵 Generate 40s Audio'}
           </button>

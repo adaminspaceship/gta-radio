@@ -128,10 +128,12 @@ button:disabled {
     display: flex;
     gap: 15px;
     margin-top: 20px;
+    justify-content: center;
 }
 
 .button-group button {
     flex: 1;
+    max-width: 300px;
 }
 
 .secondary-button {
