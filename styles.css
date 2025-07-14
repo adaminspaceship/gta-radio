@@ -124,6 +124,25 @@ button:disabled {
     box-shadow: none;
 }
 
+.secondary-button {
+    background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+    color: #2d3436;
+    margin-top: 10px;
+    width: 100%;
+    font-size: 14px;
+    padding: 12px 20px;
+    box-shadow: 0 4px 15px rgba(253, 203, 110, 0.3);
+    transition: all 0.3s ease;
+}
+
+.secondary-button:hover:not(:disabled) {
+    box-shadow: 0 6px 20px rgba(253, 203, 110, 0.4);
+}
+
+.secondary-button:active {
+    transform: scale(0.98);
+}
+
 #generateTTS {
     width: 100%;
     margin-top: 10px;

@@ -13,20 +13,27 @@ class TTSAudioSync {
         this.musicDuration = 0;
         this.ttsStoppedAt22 = false;
         
-        // Load API key from localStorage if available
+        // Load API keys from localStorage if available
         const savedApiKey = localStorage.getItem('elevenlabs_api_key');
         if (savedApiKey) {
             this.apiKeyInput.value = savedApiKey;
+        }
+        
+        const savedGrokApiKey = localStorage.getItem('grok_api_key');
+        if (savedGrokApiKey) {
+            this.grokApiKeyInput.value = savedGrokApiKey;
         }
     }
     
     initElements() {
         this.textInput = document.getElementById('textInput');
         this.apiKeyInput = document.getElementById('apiKey');
+        this.grokApiKeyInput = document.getElementById('grokApiKey');
         this.voiceSelect = document.getElementById('voiceSelect');
         this.generateButton = document.getElementById('generateTTS');
         this.playButton = document.getElementById('playButton');
         this.stopButton = document.getElementById('stopButton');
+        this.randomJokeButton = document.getElementById('randomJokeButton');
         this.status = document.getElementById('status');
         this.ttsInfo = document.getElementById('ttsInfo');
         this.ttsDurationSpan = document.getElementById('ttsDuration');
@@ -44,10 +51,15 @@ class TTSAudioSync {
         this.generateButton.addEventListener('click', () => this.generateTTS());
         this.playButton.addEventListener('click', () => this.playSyncedAudio());
         this.stopButton.addEventListener('click', () => this.stopAudio());
+        this.randomJokeButton.addEventListener('click', () => this.generateRadioJoke());
         
-        // Save API key to localStorage when changed
+        // Save API keys to localStorage when changed
         this.apiKeyInput.addEventListener('input', () => {
             localStorage.setItem('elevenlabs_api_key', this.apiKeyInput.value);
+        });
+        
+        this.grokApiKeyInput.addEventListener('input', () => {
+            localStorage.setItem('grok_api_key', this.grokApiKeyInput.value);
         });
         
         // Audio event listeners - music continues after TTS ends
@@ -305,6 +317,74 @@ class TTSAudioSync {
         const minutes = Math.floor(seconds / 60);
         const remainingSeconds = Math.floor(seconds % 60);
         return `${minutes}:${remainingSeconds.toString().padStart(2, '0')}`;
+    }
+    
+    async generateRadioJoke() {
+        const grokApiKey = this.grokApiKeyInput.value.trim();
+        const currentText = this.textInput.value.trim();
+        
+        if (!grokApiKey) {
+            this.updateStatus('Please enter your Grok API key', 'error');
+            return;
+        }
+        
+        if (!currentText) {
+            this.updateStatus('Please enter some text to transform into a joke', 'error');
+            return;
+        }
+        
+        this.randomJokeButton.disabled = true;
+        this.randomJokeButton.textContent = '🎙️ Generating...';
+        this.updateStatus('Generating radio joke...', 'loading');
+        
+        try {
+            const response = await fetch('https://api.x.ai/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${grokApiKey}`
+                },
+                body: JSON.stringify({
+                    messages: [
+                        {
+                            role: "system",
+                            content: "You are a edgy, dark, and inappropriate radio host like gta's cara delevingne in non-stop fm radio. Transform the given text into a funny 10-second radio joke with a punch at the end. The joke should be exactly the right length for a 10-second TTS read and end with a strong punchline. Format it as if you're speaking directly to radio listeners."
+                        },
+                        {
+                            role: "user",
+                            content: `Transform this text into a 10-second edgy, dark, and inappropriate radio joke with a funny punch at the end: "${currentText}"`
+                        }
+                    ],
+                    model: "grok-3-latest",
+                    stream: false,
+                    temperature: 0.8
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
+            const data = await response.json();
+            const joke = data.choices[0].message.content.trim();
+            
+            this.textInput.value = joke;
+            this.textInput.focus();
+            this.updateStatus('Radio joke generated successfully!', 'success');
+            
+        } catch (error) {
+            console.error('Error generating radio joke:', error);
+            this.updateStatus('Error generating radio joke. Check your API key and try again.', 'error');
+        } finally {
+            this.randomJokeButton.disabled = false;
+            this.randomJokeButton.textContent = '🎙️ Make Radio Joke';
+        }
+        
+        // Brief visual feedback
+        this.randomJokeButton.style.transform = 'scale(0.95)';
+        setTimeout(() => {
+            this.randomJokeButton.style.transform = '';
+        }, 150);
     }
 }
 
